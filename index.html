@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic-Tac-Toe</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 50px;
+      color: #4CAF50;
+      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+      font-weight: bold;
+    }
+    .container {
+      width: 80%;
+      max-width: 600px;
+      margin: auto;
+    }
+    #players {
+      display: flex;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    #valueCont, #whosTurn {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    #inputContainer {
+      margin: 20px 0;
+    }
+    input {
+      padding: 8px;
+      font-size: 16px;
+      width: 200px;
+      text-align: center;
+    }
+    .center-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    #find {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: black;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    #loading {
+      display: none;
+      width: 40px;
+      margin-top: 8px;
+    }
+    #cont {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      margin: 20px auto;
+      padding: 5px;
+      width: max-content;
+    }
+    .btn {
+      width: 100px;
+      height: 100px;
+      font-size: 32px;
+      border-radius: 15%;
+      border: 4px solid rgba(0, 0, 0, 0.558);
+      background-color: #d3d3d3;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      background-color: #bdbdbd;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic-Tac-Toe</h1>
+
+  <div class="container">
+    <!-- Player info -->
+    <div id="players">
+      <p id="userCont">You: <span id="user"></span></p>
+      <p id="oppNameCont">Opponent: <span id="oppName"></span></p>
+    </div>
+
+    <p id="valueCont">You are playing as <span id="value">X</span></p>
+    <p id="whosTurn">X's Turn</p>
+
+    <!-- Name input -->
+    <div id="inputContainer">
+      <p id="enterName">Enter your Name:</p>
+      <input type="text" placeholder="Name" id="name" autocomplete="off" />
+    </div>
+
+    <!-- Search button & loading gif -->
+    <div class="center-container">
+      <button id="find">Search for a player</button>
+      <img src="loading.gif" id="loading" alt="Loading..." />
+    </div>
+
+    <!-- The tic-tac-toe board -->
+    <div id="bigCont">
+      <div id="cont">
+        <button id="btn1" class="btn"></button>
+        <button id="btn2" class="btn"></button>
+        <button id="btn3" class="btn"></button>
+        <button id="btn4" class="btn"></button>
+        <button id="btn5" class="btn"></button>
+        <button id="btn6" class="btn"></button>
+        <button id="btn7" class="btn"></button>
+        <button id="btn8" class="btn"></button>
+        <button id="btn9" class="btn"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Hide UI initially
+    document.getElementById("userCont").style.display = "none";
+    document.getElementById("oppNameCont").style.display = "none";
+    document.getElementById("valueCont").style.display = "none";
+    document.getElementById("whosTurn").style.display = "none";
+    document.getElementById("bigCont").style.display = "none";
+
+    const socket = io();
+    let playerName = "";
+
+    // 1. Search for a player
+    document.getElementById("find").addEventListener("click", function () {
+      playerName = document.getElementById("name").value.trim();
+      document.getElementById("user").innerText = playerName;
+
+      if (!playerName) {
+        alert("Please enter a name!");
+        return;
+      }
+      // Show loading
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("find").disabled = true;
+
+      // Emit "find" to server
+      socket.emit("find", { name: playerName });
+    });
+
+    // 2. Receive match info
+    socket.on("find", (data) => {
+      const allPlayersArray = data.allPlayers;
+      console.log("All Games:", allPlayersArray);
+
+      // Identify the game for this player
+      const foundGame = allPlayersArray.find(
+        (g) => g.p1.name === playerName || g.p2.name === playerName
+      );
+      if (!foundGame) return;
+
+      let opponentName, playerValue;
+      if (foundGame.p1.name === playerName) {
+        opponentName = foundGame.p2.name;
+        playerValue = foundGame.p1.value;
+      } else {
+        opponentName = foundGame.p1.name;
+        playerValue = foundGame.p2.value;
+      }
+
+      document.getElementById("oppName").innerText = opponentName;
+      document.getElementById("value").innerText = playerValue;
+
+      // Show the board
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("name").style.display = "none";
+      document.getElementById("find").style.display = "none";
+      document.getElementById("enterName").style.display = "none";
+
+      document.getElementById("userCont").style.display = "block";
+      document.getElementById("oppNameCont").style.display = "block";
+      document.getElementById("valueCont").style.display = "block";
+      document.getElementById("bigCont").style.display = "block";
+      document.getElementById("whosTurn").style.display = "block";
+      document.getElementById("whosTurn").innerText = "X's Turn";
+    });
+
+    // 3. Clicking a cell
+    document.querySelectorAll(".btn").forEach((cell) => {
+      cell.addEventListener("click", function () {
+        const currentValue = document.getElementById("value").innerText; // "X" or "O"
+        cell.innerText = currentValue;
+        cell.disabled = true;
+
+        // Send move to server
+        socket.emit("playing", {
+          value: currentValue,
+          id: cell.id,
+          name: playerName
+        });
+      });
+    });
+
+    // 4. Real-time updates
+    socket.on("playing", (data) => {
+      const allPlayersArray = data.allPlayers;
+      const foundGame = allPlayersArray.find(
+        (g) => g.p1.name === playerName || g.p2.name === playerName
+      );
+      if (!foundGame) return;
+
+      const p1id = foundGame.p1.move;
+      const p2id = foundGame.p2.move;
+
+      // If sum is even => next is X's turn; if odd => next is O's turn
+      if (foundGame.sum % 2 === 0) {
+        document.getElementById("whosTurn").innerText = "X's Turn";
+      } else {
+        document.getElementById("whosTurn").innerText = "O's Turn";
+      }
+
+      // Place X if p1 moved
+      if (p1id) {
+        const cell = document.getElementById(p1id);
+        if (cell) {
+          cell.innerText = "X";
+          cell.disabled = true;
+        }
+      }
+      // Place O if p2 moved
+      if (p2id) {
+        const cell = document.getElementById(p2id);
+        if (cell) {
+          cell.innerText = "O";
+          cell.disabled = true;
+        }
+      }
+
+      // Check if there's a winner or draw
+      checkBoard(foundGame.sum);
+    });
+
+    // 5. Check for winner or draw
+    function checkBoard(moveCount) {
+      const b1 = document.getElementById("btn1").innerText || "a";
+      const b2 = document.getElementById("btn2").innerText || "b";
+      const b3 = document.getElementById("btn3").innerText || "c";
+      const b4 = document.getElementById("btn4").innerText || "d";
+      const b5 = document.getElementById("btn5").innerText || "e";
+      const b6 = document.getElementById("btn6").innerText || "f";
+      const b7 = document.getElementById("btn7").innerText || "g";
+      const b8 = document.getElementById("btn8").innerText || "h";
+      const b9 = document.getElementById("btn9").innerText || "i";
+
+      const isWin =
+        (b1 === b2 && b2 === b3) ||
+        (b4 === b5 && b5 === b6) ||
+        (b7 === b8 && b8 === b9) ||
+        (b1 === b4 && b4 === b7) ||
+        (b2 === b5 && b5 === b8) ||
+        (b3 === b6 && b6 === b9) ||
+        (b1 === b5 && b5 === b9) ||
+        (b3 === b5 && b5 === b7);
+
+      if (isWin) {
+        // If moveCount is odd => X just played => X wins
+        // If moveCount is even => O just played => O wins
+        const winner = (moveCount % 2 !== 0) ? "X" : "O";
+        socket.emit("GameOver", { name: playerName, result: winner + " WON!!" });
+
+      } else if (moveCount === 9) {
+        socket.emit("GameOver", { name: playerName, result: "DRAW!!" });
+      }
+    }
+
+    // 6. Display final result on both tabs
+    socket.on("GameOver", (data) => {
+      alert(data.result);
+      setTimeout(() => {
+        location.reload();
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
